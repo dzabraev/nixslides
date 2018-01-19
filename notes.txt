@@ -1,0 +1,2 @@
+https://slides.com/?ref=github
+https://github.com/primeos/nixos-slides
