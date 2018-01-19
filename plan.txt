@@ -1,0 +1,197 @@
+nix package manager + nix language + nix-shell
+
+# Заголовок
+The Purely Functional Package Manager
+
+
+
+# Что такое nix-менеджер, какие задачи решает
+
+1. nix-менеджер предназначается для распространения любого ПО или обычных файлов
+7. NIX-менеджер может использоваться на Linux, OSX
+2. В рамках NIX каждый пакет есть функция. Вход -- зависимости, тело функции -- описание
+процесса кофигурирования, сброки и установки.
+3. Pure означает, что резльтат функции (напр., бинарный файл) полностью определяется ее аргументами.
+Нет побочных эффектов.
+4. Установка пакета делается не в /usr/...,  а в /nix/store/...
+/nix/store/ciz98qjymi65iaq535nylgi36mx9m6jl-glib-2.54.2
+8. .bashrc <-- export PATH=~/.nix-profile/bin:$PATH
+5. Каждый пакет ставится в отдельный каталог.
+6. Хэш вычисляется на основе зависимостей и исходного кода.
+
+В системе может быть 2 версии библиотеки, которые одновременно могут быть использованы.
+
+
+
+# Что представляет из себя NIX-пакет
+1. Пакеты пишутся на языке nix. Этот язык был разработан специально для пакетов (DSL, а не GPL).
+2. Пример Nix-выражения.
+
+
+# Хранилище
+
+/nix/store/ciz98qjymi65iaq535nylgi36mx9m6jl-glib-2.54.2
+
+1. Все что попадает в хранилище (/nix/store) -- read-only
+2. Сборщик мусора удаляет неиспользуемые пакеты.
+3. Если у зависимости X-->X' меняется хэш, то пакет Y=Y(X)-->Y(X') тоже получит новый хэш и будет считаться что
+Y(X') будет новым пакетом.
+4. Хранилище является "замкнутым". Оно ссылается только на себя.
+
+  patchelf: изменяется путь до динамического загрузчика.
+  /lib64/ld-linux-x86-64.so.2 --> /nix/store/yydnhs7migvlbl48wpsxan1yvq2icbr9-glibc-2.25-49/lib/ld-linux-x86-64.so.2
+
+  Пути до .so файлов
+  Было libpthread.so.0 => /lib64/libpthread.so.0
+  Стало libpthread.so.0 => /nix/store/yydnhs7migvlbl48wpsxan1yvq2icbr9-glibc-2.25-49/lib/libpthread.so.0
+
+  patch shebangs
+  #!/bin/sh --> #!/nix/store/65l6hr8snf4v823f974k97jc65i7bhvf-bash-4.4-p12/bin/sh
+
+
+# Как работать с менеджером
+
+1. Установка менеджера curl https://nixos.org/nix/install | sh
+2. nix-env -iA nixpkgs.mc #install midnight commander
+3. nix-env --uninstall mc #Удалит symlinks
+
+Если myrepo.nix - выражения для одного или более пакетов(свой мини-репозиторий),
+то можно так:
+nix-env -f myrepo.nix -A myPackage установит myPackage в /nix/store
+
+
+#Репозиторий
+
+https://github.com/NixOS/nixpkgs
+
+Репозиторий -- болльшое nix-выражение (написано на языке nix).
+Репозиторий -- это функция, которая возвращает set состоящий из key-value-пар
+
+Репозиторий из nix-выражений скачивается при установке пакетного-менеджера и
+лежит в /nix/store. Полный путь до него обозначается как <nixpkgs>.
+
+key -- это имя пакета.
+value -- это или лямбда-выражение (пакет), или set, или ...
+
+nix-env -iA nixpkgs.mc
+            nixpkgs.pythonPackages.django
+
+Nix-language является ленивым, вычисляется только то, что попросят.
+Поэтому nixpkgs.mc не будет вычислен(установлен) пока это явно не потребуется.
+
+
+Локальная копия репозитория.
+cd /home/dza/ && git pull
+Можно подправить локальную копию репозитория, и ставить пакеты из нее
+nix-env -f /home/dza/nixpkgs -iA nixpkgs.mc
+
+stdenv.mkDerivation rec {
+  name = "mc-${version}";
+  version = "4.8.19"; # Можно изменить версию и установить новую версию
+
+  src = fetchurl {
+    url = "http://www.midnight-commander.org/downloads/${name}.tar.xz";
+    sha256 = "1pzjq4nfxl2aakxipdjs5hq9n14374ly1l00s40kd2djnnxmd7pb";
+  };
+
+  ....
+}
+
+
+# Окружение разработчика
+
+nix-shell получает на вход пакет (derivation), устанавливает все его зависимости,
+но не устанавливает сам пакет, и выбрасывает в shell, где стоят все указанные зависимости.
+
+# env.nix
+with <nixpkgs> {};
+let
+  func_patch_gdb = oldAttrs : {
+      configureFlags="--target=mips64 --program-prefix=mips64-";
+      hardeningDisable = ["fortify"];
+      preConfigure=''
+        export CFLAGS='-g3 -O0'
+        export CXXFLAGS=$CFLAGS
+      '';
+    });
+in
+stdenv.mkDerivation {
+  name = "my-dev-env";
+  # Пакет, который имеет только зависимости
+  buildInputs = [gcc7 python3 libelf #будут взяты из бинарного кэша
+    (gdb.overrideAtts func_patch_gdb) # взяли пакет для gdb,
+                                      # и сделали сборку под
+                                      # mips64 с отладочной инф.
+                                      # сброка из исходников.
+  ];
+  LDFLAGS="-Wl,-rlink-path=${libelf}/lib -lelf";
+  CFLAGS="-I${libelf}/include"; #переменные окружения
+}
+
+$ nix-shell env.nix #shell с нужными программами и ключами компиляции
+
+
+# Closure
+
+Можно сделать "замыкание" пакета. Взять все его зависимости и упаковать
+их в один файл.
+
+$ nix-store --export $(nix-store -qR $(type -p firefox)) > firefox.closure
+
+На другой машине можно взять это замыкание и установить пакет со всеми зависимостями.
+
+$ nix-store --import < firefox.closure
+
+Предложение для поставки ПО заказчику.
+1. На ОС предустанавливаем nix-менеджер. Отдаем им эту ОС.
+2. С высылаем потребитулю кложуры, которые он будет ставить offline одной командой.
+
+--  Можно быть уверенным, что пакет у потребителя установится точно так же, как и у нас.
+--  Т.к. /nix/store read-only, то можно быть уверенным, что пакет будет работать и через 5 лет,
+    и через 10, ... Пока его не удалят.
+
+
+
+
+# Написание своего пакета
+1. Если исходники имеют стандартную процедуру конфигурирования/сброки/установки, то
+в пакете необходимо пречислить его имя, зависимости, и откуда брать исх. код.
+
+Стандартная процедура -- это: GNU autotools, setup.py (python), ...
+Для выкачивания исходников есть функции fetchurl, fetchgit, fetchFromGitHub, fetchPypi, ...
+
+2. Если процедура нестандартная. То можно переопределить фазы
+
+prePhases
+unpackPhase # gzip, bzip2, xz
+patchPhase # patch <--- pathes
+preConfigurePhases
+configurePhase # ./configure <-- configureFlags, configureScript
+preBuildPhases
+buildPhase #make
+checkPhase #make check
+preInstallPhases
+installPhase #make install
+installCheckPhase #make installcheck
+fixupPhase #patchelf, rewrite shebangs
+preDistPhases
+distPhase #make dist
+postPhases
+
+Для каждой из фаз можно написать hook, напр. preBuild, postBuild
+
+Каждая из этих переменных, обычно, содержит sh-команды.
+
+
+# Литература
+
+1. Интерактивные упражнения для изучения языка nix https://nixcloud.io/tour/?id=1 (Рекомендую начать с этого)
+1. https://medium.com/@MrJamesFisher/nix-by-example-a0063a1a4c55
+1. https://learnxinyminutes.com/docs/nix/
+1. Изложение основных концепкий менеджера nix https://nixos.org/nixos/nix-pills/
+1. Официальная документация по написанию пакетов https://nixos.org/nixpkgs/manual/
+1. Быстрый поиск по пакетам. https://nixos.org/nixos/packages.html
+
+
+
+
