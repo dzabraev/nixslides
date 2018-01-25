@@ -36,12 +36,130 @@
             7 февраля 2018
           </textarea>
         </section>
+
         <section data-markdown>
           <textarea data-template>
-            ## Какие задачи решает Nix
+            `./configure && make && make install`
 
-            1. Предназначается для распространения любого ПО на Linux и OSX
-            2. 
+            1. Все сваливается в кучу(`/usr/bin, ...`).
+            2. Очень трудно удалить.
+            3. Новая версия затирает старую.
+            4. Трудно откатить установку.
+            5. Пакет один, а зависимости разные(version) на разных машинах.
+            6. `X` может испортиться при обновлении зависимости.
+            7. Нельзя иметь две версии `X`, одноврем.
+
+            Note:
+            * 1 Один и тот же пакет использует разные версии зависимостей на разных машинах.
+
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `yum, dnf, apt-get, ...`
+
+            1. Старые версии ПО.
+            Хочешь `gcc -std=c++17? --> ./configure ...`
+            2. Для установки пакетов нужен root.
+            3. Контроль зависимостей только по названию и версии (не по содержанию).
+            4. Пакет есть в pypi/nodejs/..., но нет в `yum`.
+            5. Установленный пакет виден всем.
+
+            Note:
+            * 4 Плохо, когда пишешь свой пакет.
+            * Перейти на слайд назад и сказать какие из недостатков присущи пакет.манаджеру
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `Какой менеджер хотелось бы (для Unix)`
+
+            1. **PURITY** Результат установки зависит только от **зависимостей** и **исходников**.
+            2. Различие пакетов по содержанию, по содержанию зависимостей, ...
+            3. Все установленное **READONLY**.
+            4. Можно установить >1 версий пакета одновременно.
+            5. Установка `X` только в свое окружение
+
+            Note:
+            * 1 В идеале: устанавливаемые файлы на разных машинах имеют одинаковые md5 (Даже бинарники).
+            * 2 Меняем `X` --> получаем новые версии всего, что зависило от `X`.
+            * 3 Пакеты неизменны. Зависимости неизменны.
+            * 3 -- или изменения на уровне ОС, или на уровне сборки, или обходные пути с тем, что есть.
+            * Все эти задачи решает Nix
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `А что еще хотелось бы?`
+
+            1. Пакета нет в репозитории? Написать его "на коленке" и забыть про `make install`.
+            2. Сделать пакет на основе существующего.
+            Есть пакет с native gdb, хочу его же для mips64 ...
+            3. Пакеты должны писаться ЛЕГКО.
+            4. Что бы пакетный менеджер знал про стандартные системы сборки.
+            5. Легальное распространение nonfree ПО.
+          </textarea>
+        </section>
+
+
+
+        <section data-markdown>
+          <textarea data-template>
+            `Из чего состоит NIX`
+
+            1. Функциональный ЯП Nix.
+            2. Коллекция nix-выражений https://github.com/NixOS/nixpkgs
+            3. Open source community, которое пишет nix-выражения.
+            4. `Hydra` - бинарный кэш для `nixpkgs`.
+            4. `/nix/store` локальное хранилище.
+            5. `nix-env` программа для установки пакета.
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `Nix-expression`
+            ```nix
+{ stdenv, fetchurl, pkgconfig, glib, gpm, file, e2fsprogs
+, libX11, libICE, perl, zip, unzip, gettext, slang, libssh2, openssl}:
+
+stdenv.mkDerivation rec {
+  name = "mc-${version}";
+  version = "4.8.19";
+
+  src = fetchurl {
+    url = "http://www.midnight-commander.org/downloads/${name}.tar.xz";
+    sha256 = "1pzjq4nfxl2aakxipdjs5hq9n14374ly1l00s40kd2djnnxmd7pb";
+  };
+
+  nativeBuildInputs = [ pkgconfig ];
+
+  buildInputs = [ perl glib slang zip unzip file gettext libX11 libICE
+    libssh2 openssl ] ++ stdenv.lib.optionals (!stdenv.isDarwin) [ e2fsprogs gpm ];
+
+  configureFlags = [ "--enable-vfs-smb" ];
+
+  postFixup = ''
+    # remove unwanted build-dependency references
+    sed -i -e "s!PKG_CONFIG_PATH=''${PKG_CONFIG_PATH}!PKG_CONFIG_PATH=$(echo "$PKG_CONFIG_PATH" | sed -e 's/./0/g')!" $out/bin/mc
+  '';
+}
+            ```
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `repo nixpkgs`
+
+            * all derivationx XX
+            * pythonPackages XX
+            * perPackages XX
+            * texPackages XX
+
           </textarea>
         </section>
 
