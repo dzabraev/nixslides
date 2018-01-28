@@ -1,0 +1,1 @@
+wget http://dl.fedoraproject.org/pub/fedora/linux/development/27/Everything/x86_64/os/repodata/48986ce4583cd09825c6d437150314446f0f49fa1a1bd62dcfa1085295030fe9-primary.xml.gz
