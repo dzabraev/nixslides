@@ -157,13 +157,32 @@ stdenv.mkDerivation rec {
 
             ![commits](img/nixpkgs-commits-2.svg)
 
-            * all derivationx XX
-            * pythonPackages XX
-            * perPackages XX
-            * texPackages XX
 
+            |*|pypi|nixpkgs|ubuntu(16.04)|fedora(27)|
+            |---|---|---|---|---|
+            |py2|x|1730|2716|1529|
+            |py3|x|1569|1373|1873|
+
+            ||ubuntu(16.04)|nixpkgs(master)|fedora(27)|
+            |---|---|---|
+            |total|45688|13960|46697|
           </textarea>
         </section>
+        <!--
+          nix-env -f /home/dza/source/nixpkgs/default.nix -qa -A pkgs.python2Packages | sort | uniq | wc -l
+          nix-env -f /home/dza/source/nixpkgs/default.nix -qa -A pkgs.python3Packages | sort | uniq | wc -l
+          nix-env -f /home/dza/source/nixpkgs/default.nix -qa | sort | uniq | wc -l
+
+          rm -f ubuntu-python2.txt;for f in /var/lib/apt/lists/*Packages; do grep $f -e '^Package: python-.*' >> ubuntu-python2.txt;  done
+          cat ubuntu-python2.txt | grep -v -e '-doc' | grep -v -e '-dbg' | sort | uniq | wc -l
+
+          rm -f ubuntu-python3.txt;for f in /var/lib/apt/lists/*Packages; do grep $f -e '^Package: python3-.*' >> ubuntu-python3.txt;  done
+          cat ubuntu-python3.txt | grep -v -e '-doc' | grep -v -e '-dbg' | sort | uniq | wc -l
+
+          wget http://dl.fedoraproject.org/pub/fedora/linux/development/27/Everything/source/tree/repodata/780b91b0ef99cf032d5e73b2fa21c7f76f94fb98bc0a31d20bbdb9413c3f1c03-primary.xml.gz
+          gunzip 780b91b0ef99cf032d5e73b2fa21c7f76f94fb98bc0a31d20bbdb9413c3f1c03-primary.xml.gz
+
+        -->
 
         <section data-markdown>
           <textarea data-template>
