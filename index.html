@@ -100,7 +100,7 @@
             Есть пакет с native gdb, хочу его же для mips64 ...
             3. Пакеты должны писаться ЛЕГКО.
             4. Что бы пакетный менеджер знал про стандартные системы сборки.
-            5. Легальное распространение nonfree ПО.
+            5. Легальное (псевдо)распространение nonfree ПО.
           </textarea>
         </section>
 
@@ -155,6 +155,8 @@ stdenv.mkDerivation rec {
           <textarea data-template>
             `repo nixpkgs`
 
+            ![commits](img/nixpkgs-commits-2.svg)
+
             * all derivationx XX
             * pythonPackages XX
             * perPackages XX
@@ -162,6 +164,185 @@ stdenv.mkDerivation rec {
 
           </textarea>
         </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `/nix/store/`
+
+            ```
+            /nix/store/pymp4cq49z4whxzjzys4by7dij0axdb0-gcc-6.4.0
+            /nix/store/z0ks81pzk2khcma5r1gzm8n12sad14z2-gcc-7.2.0
+            /nix/store/jyrz2ajjhpn9skywiasx17dnnp70fn7a-gcc-4.5.4
+            ```
+
+
+            ```
+            1.  Read-only хранилище всего, что установлено.
+            2.  sha256(package,dependencies).
+            3.  Зависимости только из /nix/store/
+                ldd:
+                  gcc -Wl,-dynamic-linker,X
+                  pacthelf --set-interpreter X
+                lib.so:
+                  patchelf --set-rpath /opt/my-libs/lib:/foo/lib program
+                patch shebangs:
+                  #!/bin/sh
+                  #!/nix/store/hqi64wjn83nw4mnf9a5z9r4vmpl72j3r-bash-4.4-p12/bin/sh
+            4.  Nix-daemon добавляет и удаляет файлы из /nix/store.
+                Non-root install.
+            ```
+
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `Nix profiles`
+            ![commits](img/user-environments.png)
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `Окружение разработчика`
+```nix
+#file env.nix
+with import <nixpkgs> {};
+stdenv.mkDerivation {
+  name = "my-env";
+  buildInputs = [
+    gcc7
+    llvm
+    gdb
+  ];
+  LDFLAGS="-lLLVM -Wl,-rpath=${llvm}/lib";
+}
+```
+
+`$ nix-shell env.nix`
+          </textarea>
+        </section>
+
+
+
+
+
+        <section data-markdown>
+          <textarea data-template>
+            `Окружение разработчика`
+```nix
+#file env.nix
+with import <nixpkgs> {};
+let
+  gdb_debug = gdb.overrideAttrs (oldAttrs : {
+    dontStrip = true;
+    hardeningDisable = ["fortify"];
+
+    preConfigure = ''
+      export CXXFLAGS="-g3 -O0"
+      export CFLAGS=$CXXFLAGS
+    '' + (oldAttrs.preConfigure or "");
+  });
+in
+stdenv.mkDerivation {
+  name = "my-env";
+  buildInputs = [
+    gcc7
+    llvm
+    gdb_debug
+  ];
+  LDFLAGS="-lLLVM -Wl,-rpath=${llvm}/lib";
+}
+```
+          </textarea>
+        </section>
+
+
+
+
+
+
+        <section data-markdown>
+          <textarea data-template>
+            `Окружение разработчика`
+```nix
+#file env.nix
+with import <nixpkgs> {};
+let
+  python2_debug = python.overrideAttrs (oldAttrs : {
+    dontStrip = true;
+    hardeningDisable = ["all"];
+
+    preConfigure = ''
+      export CFLAGS="$CFLAGS -g3 -O0"
+      export EXTRA_CFLAGS="-g3 -O0 "
+    '' + oldAttrs.preConfigure;
+
+    configureFlags = oldAttrs.configureFlags ++ [
+      "EXTRA_CFLAGS='-DPy_DEBUG'"
+      "--with-pydebug"
+    ];
+  });
+
+  gdb_debug = (gdb.overrideAttrs (oldAttrs : {
+    dontStrip = true;
+    hardeningDisable = ["fortify"];
+
+    preConfigure = ''
+      export CXXFLAGS="-g3 -O0"
+      export CFLAGS=$CXXFLAGS
+    '' + (oldAttrs.preConfigure or "");
+  })).override {python = python2_debug};
+in
+stdenv.mkDerivation {
+  name = "my-env";
+  buildInputs = [
+    gcc7
+    llvm
+    gdb_debug
+  ];
+  LDFLAGS="-lLLVM -Wl,-rpath=${llvm}/lib";
+}
+```
+          </textarea>
+        </section>
+
+
+
+
+
+
+        <section data-markdown>
+          <textarea data-template>
+            `Nix shebangs`
+```python
+#! /usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 python34Packages.pygobject3 libnotify gobjectIntrospection gdk_pixbuf
+
+from gi.repository import Notify
+Notify.init("Hello world")
+Hello=Notify.Notification.new("Hello world",
+  "This is an example notification.",
+  "dialog-information")
+Hello.show()
+```
+
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `Generic builders`
+            ```
+            1. GNU autotools stdenv.mkDerivation 
+            1. BEAM buildRebar3/buildErlangMk/buildMix/buildHex
+            2. buildGoPackage
+            
+            ```
+          </textarea>
+        </section>
+
+
 
       </div>
     </div>
@@ -174,6 +355,7 @@ stdenv.mkDerivation rec {
       // - https://github.com/hakimel/reveal.js#configuration
       // - https://github.com/hakimel/reveal.js#dependencies
       Reveal.initialize({
+        slideNumber: true,
         dependencies: [
           { src: 'plugin/markdown/marked.js' },
           { src: 'plugin/markdown/markdown.js' },
