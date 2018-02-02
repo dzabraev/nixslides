@@ -157,10 +157,10 @@ stdenv.mkDerivation rec {
             <!-- .element style="background:#222;border-style:none;box-shadow:none" -->
 
 
-            ||pypi|nixpkgs|ubuntu(16.04)|fedora(27)|
-            |:---:|:---:|:---:|:---:|:---:|
-            |py2|x|1730|2716|1529|
-            |py3|x|1569|1373|1873|
+            ||nixpkgs|ubuntu(16.04)|fedora(27)|
+            |:---:|:---:|:---:|:---:|
+            |py2|1730|2716|1529|
+            |py3|1569|1373|1873|
 
             ||ubuntu(16.04)|nixpkgs|fedora(27)|
             |:---:|:---:|:---:|:---:|
@@ -351,12 +351,50 @@ Hello.show()
         <section data-markdown>
           <textarea data-template>
             `Generic builders`
+
+```nix
+{ stdenv, buildPythonPackage, fetchPypi }:
+
+buildPythonPackage rec {
+  pname = "pysigset";
+  version = "0.3.2";
+
+  src = fetchPypi {
+    inherit pname version;
+    sha256 = "0ym44z3nwp8chfi7snmknkqnl2q9bghzv9p923r8w748i5hvyxx8";
+  };
+}
+```
+
+```
+mkDerivation, buildPythonPackage, buildPerlPackage
+buildDotnetPackage, buildEmacsPackage, buildLispPackage
+buildEmscriptenPackage, buildGoPackage, buildRPackage
+buildHaskellPackage, buildsStalePackage
+buildLlvmPackage, buildLuaPackage, buildRustPackage
+buildModelPackage, buildNodePackage, buildRPackage
+```
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `offline install`
+            * Nix может быть установлен offline
+                см. https://github.com/dzabraev/nix-multiuser
+            * Минимальная комплектация 118МБ
+            * Для пакета можно создать closure.
+
             ```
-            1. GNU autotools stdenv.mkDerivation 
-            1. BEAM buildRebar3/buildErlangMk/buildMix/buildHex
-            2. buildGoPackage
-            
+            nix-store --export $(nix-store -qR
+             /nix/store/xnax1zyqhnf3hm45a1sfzmgwlm4q2j9a-mcgdb-1.4/bin/mcgdb
+            ) > mcgdb.closure
+
+            nix-store --import < mcgdb.closure
+            nix-env -i /nix/store/xnax1zyqhnf3hm45a1sfzmgwlm4q2j9a-mcgdb-1.4
+
             ```
+            Кложур -- это пакет и все его runtime зависимости.
           </textarea>
         </section>
 
