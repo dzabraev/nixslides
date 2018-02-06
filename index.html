@@ -42,12 +42,12 @@
             `./configure && make && make install`
 
             1. Все сваливается в кучу(`/usr/bin, ...`).
-            2. Очень трудно удалить.
             3. Новая версия затирает старую.
+            7. Нельзя иметь две версии `X`, одноврем.
+            2. Очень трудно удалить.
             4. Трудно откатить установку.
             5. Пакет один, а зависимости разные(version) на разных машинах.
             6. `X` может испортиться при обновлении зависимости.
-            7. Нельзя иметь две версии `X`, одноврем.
 
             Note:
             * 1 Один и тот же пакет использует разные версии зависимостей на разных машинах.
@@ -61,10 +61,11 @@
 
             1. Старые версии ПО.
             Хочешь `gcc -std=c++17? --> ./configure ...`
+            5. Установленный пакет виден всем.
             2. Для установки пакетов нужен root.
             3. Контроль зависимостей только по названию и версии (не по содержанию).
             4. Пакет есть в pypi/nodejs/..., но нет в `yum`.
-            5. Установленный пакет виден всем.
+
 
             Note:
             * 4 Плохо, когда пишешь свой пакет.
@@ -123,8 +124,9 @@
           <textarea data-template>
             `Nix-expression`
             ```nix
-{ stdenv, fetchurl, pkgconfig, glib, gpm, file, e2fsprogs
-, libX11, libICE, perl, zip, unzip, gettext, slang, libssh2, openssl}:
+{ stdenv, fetchurl, pkgconfig, glib, gpm, file, e2fsprogs,
+  libX11, libICE, perl, zip, unzip, gettext, slang,
+  libssh2, openssl}:
 
 stdenv.mkDerivation rec {
   name = "mc-${version}";
@@ -198,7 +200,7 @@ stdenv.mkDerivation rec {
             1.  Read-only хранилище всего, что установлено.
             2.  sha256(package,dependencies).
             3.  Зависимости только из /nix/store/
-                ldd:
+                ld.so.2:
                   gcc -Wl,-dynamic-linker,X
                   pacthelf --set-interpreter X
                 lib.so:
@@ -372,7 +374,7 @@ buildDotnetPackage, buildEmacsPackage, buildLispPackage
 buildEmscriptenPackage, buildGoPackage, buildRPackage
 buildHaskellPackage, buildsStalePackage
 buildLlvmPackage, buildLuaPackage, buildRustPackage
-buildModelPackage, buildNodePackage, buildRPackage
+buildModelPackage, buildNodePackage
 ```
           </textarea>
         </section>
@@ -398,6 +400,12 @@ buildModelPackage, buildNodePackage, buildRPackage
           </textarea>
         </section>
 
+        <section data-markdown>
+          <textarea data-template>
+            Вопросы?
+            <!-- .element style="font-size:100px" -->
+          </textarea>
+        </section>
 
 
       </div>
