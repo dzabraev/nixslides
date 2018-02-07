@@ -97,9 +97,9 @@
             `А что еще хотелось бы?`
 
             1. Пакета нет в репозитории? Написать его "на коленке" и забыть про `make install`.
+            3. Пакеты должны писаться ЛЕГКО.
             2. Сделать пакет на основе существующего.
             Есть пакет с native gdb, хочу его же для mips64 ...
-            3. Пакеты должны писаться ЛЕГКО.
             4. Что бы пакетный менеджер знал про стандартные системы сборки.
             5. Легальное (псевдо)распространение nonfree ПО.
           </textarea>
@@ -230,7 +230,7 @@ stdenv.mkDerivation rec {
 with import <nixpkgs> {};
 stdenv.mkDerivation {
   name = "my-env";
-  buildInputs = [
+  nativeBuildInputs = [
     gcc7
     llvm
     gdb
@@ -383,9 +383,9 @@ buildModelPackage, buildNodePackage
           <textarea data-template>
             `offline install`
             * Nix может быть установлен offline
-                см. https://github.com/dzabraev/nix-multiuser
             * Минимальная комплектация 118МБ
             * Для пакета можно создать closure.
+            Кложур -- это пакет и все его runtime зависимости.
 
             ```
             nix-store --export $(nix-store -qR
@@ -396,7 +396,6 @@ buildModelPackage, buildNodePackage
             nix-env -i /nix/store/xnax1zyqhnf3hm45a1sfzmgwlm4q2j9a-mcgdb-1.4
 
             ```
-            Кложур -- это пакет и все его runtime зависимости.
           </textarea>
         </section>
 
