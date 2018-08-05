@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <title>reveal.js</title>
+    <title>nix-huawei</title>
 
     <link rel="stylesheet" href="css/reveal.css">
     <link rel="stylesheet" href="css/theme/black.css">
@@ -43,14 +43,11 @@
 
             1. Все сваливается в кучу(`/usr/bin, ...`).
             3. Новая версия затирает старую.
-            7. Нельзя иметь две версии `X`, одноврем.
-            2. Очень трудно удалить.
-            4. Трудно откатить установку.
+            2. Трудно удалить.
+            4. Невозможно сделать rollback.
             5. Пакет один, а зависимости разные(version) на разных машинах.
             6. `X` может испортиться при обновлении зависимости.
 
-            Note:
-            * 1 Один и тот же пакет использует разные версии зависимостей на разных машинах.
 
           </textarea>
         </section>
@@ -59,17 +56,11 @@
           <textarea data-template>
             `yum, dnf, apt-get, ...`
 
-            1. Старые версии ПО.
-            Хочешь `gcc -std=c++17? --> ./configure ...`
             5. Установленный пакет виден всем.
             2. Для установки пакетов нужен root.
-            3. Контроль зависимостей только по названию и версии (не по содержанию).
-            4. Пакет есть в pypi/nodejs/..., но нет в `yum`.
+            3. Контроль зависимостей только по названию и версии.
 
 
-            Note:
-            * 4 Плохо, когда пишешь свой пакет.
-            * Перейти на слайд назад и сказать какие из недостатков присущи пакет.манаджеру
           </textarea>
         </section>
 
@@ -77,18 +68,12 @@
           <textarea data-template>
             `Какой менеджер хотелось бы (для Unix)`
 
-            1. **PURITY** Результат установки зависит только от **зависимостей** и **исходников**.
-            2. Различие пакетов по содержанию, по содержанию зависимостей, ...
+            1. **PURITY** Результат установки зависит только от "сборочных" данных (зависимости исх. код, алгоритм сборки).
+            2. Различие пакетов по "сборочным" данным.
             3. Все установленное **READONLY**.
             4. Можно установить >1 версий пакета одновременно.
             5. Установка `X` только в свое окружение
 
-            Note:
-            * 1 В идеале: устанавливаемые файлы на разных машинах имеют одинаковые md5 (Даже бинарники).
-            * 2 Меняем `X` --> получаем новые версии всего, что зависило от `X`.
-            * 3 Пакеты неизменны. Зависимости неизменны.
-            * 3 -- или изменения на уровне ОС, или на уровне сборки, или обходные пути с тем, что есть.
-            * Все эти задачи решает Nix
           </textarea>
         </section>
 
@@ -164,9 +149,9 @@ stdenv.mkDerivation rec {
             |py2|1730|2716|1529|
             |py3|1569|1373|1873|
 
-            ||ubuntu(16.04)|nixpkgs|fedora(27)|
+            ||nixpkgs|ubuntu(16.04)|fedora(27)|
             |:---:|:---:|:---:|:---:|
-            |total|45688|13960|46697|
+            |total|13960|45688|46697|
           </textarea>
         </section>
         <!--
@@ -224,7 +209,78 @@ stdenv.mkDerivation rec {
 
         <section data-markdown>
           <textarea data-template>
-            `Окружение разработчика`
+            `Development environ`
+            ```nix
+# file env.nix
+with import <nixpkgs> {};
+  let
+    huawei = import (fetchgit {
+      url = "http://code.huawei.com/mrc/nix";
+      rev = "826728aeb951282b19695f18672399d016843692";
+      sha256 = "15816h3qji84g617y9mm8gvp5b9fsjgwv7805q00ar1kcrlf0xn2";
+    });
+  in
+  stdenv.mkDerivation rec {
+    name = "mrc-softmax-train-validation-env";
+
+    DATASET_MEDIA = huawei.datasets.media;
+    DATASET_HY = huawei.datasets.hy;
+    DATASET_HY_ALIGN07 = huawei.datasets.hy07;
+
+    nativeBuildInputs = [
+      python27Packages.pandas
+      python27Packages.tensorflow
+    ];
+  }
+            ```
+```
+[dza@dza-desktop tmp]$ nix-shell env.nix 
+[nix-shell:/tmp]$ echo $DATASET_HY
+/nix/store/vx0aif36h1r9hfs61p13bc2n9d7lafgl-source
+```
+          
+          </textarea>
+        </section>
+
+
+        <section data-markdown>
+          <textarea data-template>
+            `Development environ. Huawei nix-exprs.`
+```nix
+with import <nixpkgs> {};
+
+{
+  datasets = {
+    hy = {
+      outPath = fetchTarball {
+        url = http://10.xxx.xxx.183/datasets/hy.tar;
+        sha256 = "0n0301rjhkbgyspb1ar1g782jr8596j7bwf6zbndy48ck199fdda";
+      };
+      description = "Non aligned original HY dataset.";
+    };
+    hy07 = {
+      outPath = fetchTarball {
+        url = http://10.xxx.xxx.183/datasets/hy07.tar.gz;
+        sha256 = "0yvaln998fpbvd1k5dda7p18ryxzls6f58kgcrry3dh213zggd80";
+      };
+      description = "HY dataset aligned with alpha = 0.7.";
+    };
+    media = {
+      outPath = fetchTarball {
+        url = http://10.xxx.xxx.183/datasets/media.tar.xz;
+        sha256 = "07r656mp9rwg50jxk6zkz0xkna4669cs9i8xid7smkx1vr9abrdb";
+      };
+      description = "Non aligned original MEDIA dataset.";
+    };
+  };
+}
+```
+          </textarea>
+        </section>
+
+        <section data-markdown>
+          <textarea data-template>
+            `Development environ`
 ```nix
 #file env.nix
 with import <nixpkgs> {};
@@ -235,7 +291,7 @@ stdenv.mkDerivation {
     llvm
     gdb
   ];
-  LDFLAGS="-lLLVM -Wl,-rpath=${llvm}/lib";
+  LDFLAGS = "-lLLVM -Wl,-rpath=${llvm}/lib";
 }
 ```
 
@@ -249,7 +305,7 @@ stdenv.mkDerivation {
 
         <section data-markdown>
           <textarea data-template>
-            `Окружение разработчика`
+            `Development environ`
 ```nix
 #file env.nix
 with import <nixpkgs> {};
@@ -258,10 +314,10 @@ let
     dontStrip = true;
     hardeningDisable = ["fortify"];
 
-    preConfigure = ''
+    preConfigure = (oldAttrs.preConfigure or "") + ''
       export CXXFLAGS="-g3 -O0"
       export CFLAGS=$CXXFLAGS
-    '' + (oldAttrs.preConfigure or "");
+    '';
   });
 in
 stdenv.mkDerivation {
@@ -271,7 +327,7 @@ stdenv.mkDerivation {
     llvm
     gdb_debug
   ];
-  LDFLAGS="-lLLVM -Wl,-rpath=${llvm}/lib";
+  LDFLAGS = "-lLLVM -Wl,-rpath=${llvm}/lib";
 }
 ```
           </textarea>
@@ -284,7 +340,7 @@ stdenv.mkDerivation {
 
         <section data-markdown>
           <textarea data-template>
-            `Окружение разработчика`
+            `Development environ`
 ```nix
 #file env.nix
 with import <nixpkgs> {};
@@ -308,11 +364,11 @@ let
     dontStrip = true;
     hardeningDisable = ["fortify"];
 
-    preConfigure = ''
+    preConfigure = (oldAttrs.preConfigure or "") + ''
       export CXXFLAGS="-g3 -O0"
       export CFLAGS=$CXXFLAGS
-    '' + (oldAttrs.preConfigure or "");
-  })).override {python = python2_debug};
+    '';
+  })).override {python = python2_debug;};
 in
 stdenv.mkDerivation {
   name = "my-env";
@@ -321,7 +377,7 @@ stdenv.mkDerivation {
     llvm
     gdb_debug
   ];
-  LDFLAGS="-lLLVM -Wl,-rpath=${llvm}/lib";
+  LDFLAGS = "-lLLVM -Wl,-rpath=${llvm}/lib";
 }
 ```
           </textarea>
@@ -329,6 +385,24 @@ stdenv.mkDerivation {
 
 
 
+        <section data-markdown>
+          <textarea data-template>
+              `Nix + Docker`
+
+Ubuntu-based image https://github.com/solita/docker-systemd
+
+```bash
+docker run -d --name my-nix --security-opt seccomp=unconfined \
+--tmpfs /run --tmpfs /run/lock -v /nix:/nix \
+-v /sys/fs/cgroup:/sys/fs/cgroup:ro -t solita/ubuntu-systemd
+```
+
+```bash
+docker exec -it my-nix bash -c \
+'. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh; bash'
+```
+          </textarea>
+        </section>
 
 
 
