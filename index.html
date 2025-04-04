@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <title>nix-huawei</title>
+    <title>NIX package manager</title>
 
     <link rel="stylesheet" href="css/reveal.css">
     <link rel="stylesheet" href="css/theme/black.css">
@@ -31,7 +31,7 @@
             ![NixOS logo](img/nix-white.svg)
             <!-- .element style="background:#222;border-style:none;box-shadow:none" -->
 
-            Huawei, Maksim Dzabraev
+            Maksim Dzabraev
 
             9 august 2018
           </textarea>
@@ -207,76 +207,6 @@ stdenv.mkDerivation rec {
           </textarea>
         </section>
 
-        <section data-markdown>
-          <textarea data-template>
-            `Development environ`
-            ```nix
-# file env.nix
-with import <nixpkgs> {};
-  let
-    huawei = import (fetchgit {
-      url = "http://code.huawei.com/mrc/nix";
-      rev = "826728aeb951282b19695f18672399d016843692";
-      sha256 = "15816h3qji84g617y9mm8gvp5b9fsjgwv7805q00ar1kcrlf0xn2";
-    });
-  in
-  stdenv.mkDerivation rec {
-    name = "mrc-softmax-train-validation-env";
-
-    DATASET_MEDIA = huawei.datasets.media;
-    DATASET_HY = huawei.datasets.hy;
-    DATASET_HY_ALIGN07 = huawei.datasets.hy07;
-
-    nativeBuildInputs = [
-      python27Packages.pandas
-      python27Packages.tensorflow
-    ];
-  }
-            ```
-```
-[dza@dza-desktop tmp]$ nix-shell env.nix 
-[nix-shell:/tmp]$ echo $DATASET_HY
-/nix/store/vx0aif36h1r9hfs61p13bc2n9d7lafgl-source
-```
-          
-          </textarea>
-        </section>
-
-
-        <section data-markdown>
-          <textarea data-template>
-            `Development environ. Huawei nix-exprs.`
-```nix
-with import <nixpkgs> {};
-
-{
-  datasets = {
-    hy = {
-      outPath = fetchTarball {
-        url = http://10.xxx.xxx.183/datasets/hy.tar;
-        sha256 = "0n0301rjhkbgyspb1ar1g782jr8596j7bwf6zbndy48ck199fdda";
-      };
-      description = "Non aligned original HY dataset.";
-    };
-    hy07 = {
-      outPath = fetchTarball {
-        url = http://10.xxx.xxx.183/datasets/hy07.tar.gz;
-        sha256 = "0yvaln998fpbvd1k5dda7p18ryxzls6f58kgcrry3dh213zggd80";
-      };
-      description = "HY dataset aligned with alpha = 0.7.";
-    };
-    media = {
-      outPath = fetchTarball {
-        url = http://10.xxx.xxx.183/datasets/media.tar.xz;
-        sha256 = "07r656mp9rwg50jxk6zkz0xkna4669cs9i8xid7smkx1vr9abrdb";
-      };
-      description = "Non aligned original MEDIA dataset.";
-    };
-  };
-}
-```
-          </textarea>
-        </section>
 
         <section data-markdown>
           <textarea data-template>
